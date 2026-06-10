@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DV3 Cal</title>
+<style>
+body{font-family:system-ui,sans-serif;background:#f4f6f8;margin:0;padding:20px}
+.wrap{max-width:1000px;margin:auto}
+.card{background:#fff;border-radius:12px;padding:16px;margin-bottom:16px;box-shadow:0 2px 8px rgba(0,0,0,.08)}
+h1{text-align:center}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.item{display:flex;align-items:center;justify-content:space-between;padding:8px;border-bottom:1px solid #eee}
+.left{display:flex;align-items:center;gap:8px}
+.icon{width:28px;height:28px}
+.high{color:#0a8f2f;font-weight:bold}
+.mid{color:#555}
+.low{color:#d97706;font-weight:bold}
+.vlow{color:#dc2626;font-weight:bold}
+@media(max-width:700px){.grid{grid-template-columns:1fr}}
+
+/* 커스텀 드롭다운 */
+.custom-select{position:relative;width:200px;margin:8px 0;cursor:pointer}
+.selected{display:flex;align-items:center;gap:8px;padding:8px;border:1px solid #ccc;border-radius:6px;background:#fff}
+.selected img{width:24px;height:24px}
+.options{position:absolute;top:100%;left:0;right:0;background:#fff;border:1px solid #ccc;border-radius:6px;max-height:200px;overflow-y:auto;display:none;z-index:10}
+.options li{display:flex;align-items:center;gap:8px;padding:8px}
+.options li:hover{background:#f0f0f0}
+.options img{width:24px;height:24px}
+</style>
+</head>
+<body>
+<div class="wrap">
+<h1>DV3 상성 계산기</h1>
+
+<div class="card">
+<label>상대 속성 1</label>
+<div class="custom-select" id="sel1"></div>
+<label>상대 속성 2</label>
+<div class="custom-select" id="sel2"></div>
+<label>상대 속성 3</label>
+<div class="custom-select" id="sel3"></div>
+
+  
+  <!-- 초기화 버튼 -->
+  <button id="resetBtn" style="margin-top:12px;padding:8px 12px;border:none;border-radius:6px;background:#dc2626;color:#fff;cursor:pointer">
+    초기화
+    </button>
+</div>
+
+<div class="grid">
+<div class="card">
+<h2>⚔ 공격 추천</h2>
+<div id="attack"></div>
+</div>
+<div class="card">
+<h2>🛡 방어 추천</h2>
+<div id="defense"></div>
+</div>
+</div>
+</div>
+
+<script>
+const icons={
+"불":"https://i.ibb.co/67YddCbv/image.png","물":"https://i.ibb.co/Gqt6tCM/image.png",
+"바람":"https://i.ibb.co/yByh2dTg/image.png","강철":"https://i.ibb.co/5xz6FVGm/image.png",
+"땅":"https://i.ibb.co/VWzvRyvR/image.png","번개":"https://i.ibb.co/TqR3bx23/image.png",
+"빛":"https://i.ibb.co/HT159bQd/image.png","어둠":"https://i.ibb.co/wD3P0w0/image.png",
+"꿈":"https://i.ibb.co/WW7rbWwN/image.png","영혼":"https://i.ibb.co/LDLYy1ZM/image.png",
+"여명":"https://i.ibb.co/ksc9t30C/image.png","황혼":"https://i.ibb.co/Ls1R3Sc/image.png",
+"신성":"https://i.ibb.co/Rpd1zksR/image.png","혼돈":"https://i.ibb.co/NgM15qcq/image.png"
+};
+
+const chart={/* chart 내용 그대로 */ 
+"불":{"불":0.5,"물":2,"바람":0.5,"강철":0.5,"땅":2,"번개":1,"빛":1,"어둠":1,"꿈":1,"영혼":1,"여명":0.5,"황혼":1,"신성":1,"혼돈":0.5},
+"물":{"불":0.5,"물":0.5,"바람":2,"강철":0.5,"땅":1,"번개":2,"빛":1,"어둠":1,"꿈":1,"영혼":1,"여명":1,"황혼":1,"신성":1,"혼돈":0.5},
+"바람":{"불":2,"물":0.5,"바람":0.5,"강철":0.5,"땅":0.5,"번개":0.5,"빛":1,"어둠":1,"꿈":1,"영혼":2,"여명":1,"황혼":1,"신성":1,"혼돈":2},
+"강철":{"불":2,"물":1,"바람":0.5,"강철":1,"땅":2,"번개":1,"빛":2,"어둠":1,"꿈":0.5,"영혼":0.25,"여명":0.5,"황혼":1,"신성":0.5,"혼돈":0.5},
+"땅":{"불":1,"물":2,"바람":2,"강철":1,"땅":1,"번개":0.25,"빛":1,"어둠":1,"꿈":1,"영혼":1,"여명":1,"황혼":1,"신성":1,"혼돈":2},
+"번개":{"불":1,"물":1,"바람":1,"강철":0.5,"땅":2,"번개":0.5,"빛":1,"어둠":1,"꿈":1,"영혼":1,"여명":1,"황혼":1,"신성":1,"혼돈":1},
+"빛":{"불":1,"물":1,"바람":1,"강철":1,"땅":1,"번개":1,"빛":1,"어둠":0.5,"꿈":2,"영혼":1,"여명":2,"황혼":1,"신성":1,"혼돈":1},
+"어둠":{"불":1,"물":1,"바람":1,"강철":1,"땅":1,"번개":1,"빛":2,"어둠":0.5,"꿈":0.25,"영혼":1,"여명":2,"황혼":0.5,"신성":1,"혼돈":1},
+"꿈":{"불":1,"물":1,"바람":1,"강철":1,"땅":1,"번개":1,"빛":0.5,"어둠":1,"꿈":0.5,"영혼":1,"여명":1,"황혼":2,"신성":1,"혼돈":1},
+"영혼":{"불":1,"물":1,"바람":0.5,"강철":1,"땅":2,"번개":1,"빛":0.5,"어둠":2,"꿈":2,"영혼":0.5,"여명":0.5,"황혼":1,"신성":1,"혼돈":1},
+"여명":{"불":1,"물":1,"바람":1,"강철":2,"땅":1,"번개":1,"빛":0.5,"어둠":0.5,"꿈":1,"영혼":2,"여명":1,"황혼":1,"신성":0.25,"혼돈":1},
+"황혼":{"불":1,"물":1,"바람":1,"강철":1,"땅":1,"번개":1,"빛":0.25,"어둠":2,"꿈":1,"영혼":0.5,"여명":1,"황혼":2,"신성":1,"혼돈":1},
+"신성":{"불":0.5,"물":0.5,"바람":0.5,"강철":1,"땅":1,"번개":0.5,"빛":1,"어둠":1,"꿈":1,"영혼":1,"여명":2,"황혼":1,"신성":2,"혼돈":2},
+"혼돈":{"불":2,"물":1,"바람":1,"강철":2,"땅":1,"번개":1,"빛":2,"어둠":1,"꿈":1,"영혼":1,"여명":1,"황혼":1,"신성":1,"혼돈":0.5}
+};
+
+const types=Object.keys(icons);
+const sels=[document.getElementById('sel1'),document.getElementById('sel2'),document.getElementById('sel3')];
+
+function cls(v){
+  if(v>=2)return'high';
+  if(v==1)return'mid';
+  if(v==0.5)return'low';
+  return'vlow';
+}
+
+// 커스텀 드롭다운 생성
+function makeDropdown(el){
+  const selected=document.createElement('div');
+  selected.className='selected';
+  selected.innerHTML='<span>선택 안함</span>';
+  const options=document.createElement('ul');
+  options.className='options';
+  options.innerHTML='<li data-value=""><span>선택 안함</span></li>'+
+    types.map(t=>`<li data-value="${t}"><img src="${icons[t]}"><span>${t}</span></li>`).join('');
+  el.appendChild(selected);
+  el.appendChild(options);
+
+  selected.addEventListener('click',()=>{
+    options.style.display=options.style.display==='block'?'none':'block';
+  });
+  options.querySelectorAll('li').forEach(li=>{
+    li.addEventListener('click',()=>{
+      selected.innerHTML=li.innerHTML;
+      selected.dataset.value=li.dataset.value;
+      options.style.display='none';
+      update();
+    });
+  });
+}
+
+// 선택된 값 가져오기
+function getSelections(){
+  return sels.map(s=>s.querySelector('.selected').dataset.value).filter(Boolean);
+}
+
+function update(){
+  const sel=getSelections();
+  if(new Set(sel).size!==sel.length){alert('중복 선택 불가');return;}
+  let atk=[],def=[];
+  types.forEach(a=>{
+    let m=1; sel.forEach(d=>m*=chart[d][a]); atk.push([a,m]);
+  });
+  atk.sort((a,b)=>b[1]-a[1]);
+  types.forEach(d=>{
+    let m=1; sel.forEach(e=>m*=chart[d][e]); def.push([d,m]);
+  });
+  def.sort((a,b)=>a[1]-b[1]);
+
+  attack.innerHTML=atk.map(x=>
+    `<div class=item><div class=left><img class=icon src="${icons[x[0]]}"><span>${x[0]}</span></div><span class="${cls(x[1])}">${x[1]}배</span></div>`
+  ).join('');
+  defense.innerHTML=def.map(x=>
+    `<div class=item><div class=left><img class=icon src="${icons[x[0]]}"><span>${x[0]}</span></div><span class="${cls(x[1])}">${x[1]}배</span></div>`
+  ).join('');
+}
+
+// 초기화 버튼 기능
+document.getElementById('resetBtn').addEventListener('click',()=>{
+  sels.forEach(s=>{
+    const selected=s.querySelector('.selected');
+    selected.innerHTML='<span>선택 안함</span>';
+    selected.dataset.value="";
+  });
+  update();
+});
+
+
+// 초기화
+sels.forEach(makeDropdown);
+update();
+</script>
+</body>
+</html>
