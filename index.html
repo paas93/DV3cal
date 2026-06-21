@@ -19,6 +19,7 @@ h1{text-align:center}
 .vlow{color:#dc2626;font-weight:bold}
 @media(max-width:700px){.grid{grid-template-columns:1fr}}
 
+
 /* 커스텀 드롭다운 */
 .custom-select{position:relative;width:200px;margin:8px 0;cursor:pointer}
 .selected{display:flex;align-items:center;gap:8px;padding:8px;border:1px solid #ccc;border-radius:6px;background:#fff}
@@ -27,6 +28,38 @@ h1{text-align:center}
 .options li{display:flex;align-items:center;gap:8px;padding:8px}
 .options li:hover{background:#f0f0f0}
 .options img{width:24px;height:24px}
+
+.recommend-item{
+ display:flex;
+ align-items:center;
+ gap:10px;
+ padding:10px;
+ border-bottom:1px solid #eee;
+}
+
+.rank{
+ width:24px;
+ height:24px;
+ border-radius:50%;
+ background:#222;
+ color:white;
+ display:flex;
+ align-items:center;
+ justify-content:center;
+ font-weight:bold;
+}
+
+.recommend-item img{
+ width:32px;
+ height:32px;
+}
+
+.reason{
+ color:#555;
+ font-size:14px;
+}
+
+
 </style>
 </head>
 <body>
@@ -48,7 +81,14 @@ h1{text-align:center}
     </button>
 </div>
 
+
+<div class="card">
+<h2>⭐ 추천 속성</h2>
+<div id="recommend"></div>
+</div>
+
 <div class="grid">
+
 <div class="card">
 <h2>⚔ 공격 추천</h2>
 <div id="attack"></div>
@@ -147,7 +187,100 @@ function update(){
   defense.innerHTML=def.map(x=>
     `<div class=item><div class=left><img class=icon src="${icons[x[0]]}"><span>${x[0]}</span></div><span class="${cls(x[1])}">${x[1]}배</span></div>`
   ).join('');
+// 추천 속성 계산
+let recommendList=[];
+
+types.forEach(t=>{
+
+  let atkValue=1;
+  let defValue=1;
+
+  sel.forEach(e=>{
+    atkValue*=chart[e][t];
+    defValue*=chart[t][e];
+  });
+
+
+  // 1순위 : 공격 2배 + 방어 0.25배
+  if(atkValue===2 && defValue===0.25){
+    recommendList.push({
+      type:t,
+      atk:atkValue,
+      def:defValue,
+      score:1
+    });
+  }
+
+});
+
+
+// 2순위 추가
+if(recommendList.length<3){
+
+types.forEach(t=>{
+
+  let atkValue=1;
+  let defValue=1;
+
+  sel.forEach(e=>{
+    atkValue*=chart[e][t];
+    defValue*=chart[t][e];
+  });
+
+
+  if(atkValue===2 && defValue===0.5){
+
+    // 중복 방지
+    if(!recommendList.find(r=>r.type===t)){
+      recommendList.push({
+        type:t,
+        atk:atkValue,
+        def:defValue,
+        score:2
+      });
+    }
+
+  }
+
+});
+
 }
+
+
+// 최대 3개
+recommendList=recommendList.slice(0,3);
+
+
+// 출력
+document.getElementById('recommend').innerHTML = recommendList.length ?
+
+recommendList.map((r,i)=>
+`
+<div class="recommend-item">
+
+<div class="rank">${i+1}</div>
+
+<img src="${icons[r.type]}">
+
+<div>
+<b>${r.type}</b>
+<div class="reason">
+공격 ${r.atk}배, 방어 ${r.def}배
+</div>
+</div>
+
+</div>
+`
+).join('')
+
+:
+
+`<div>조건에 맞는 추천 속성이 없습니다.</div>`;
+
+}
+
+
+
 
 // 초기화 버튼 기능
 document.getElementById('resetBtn').addEventListener('click',()=>{
