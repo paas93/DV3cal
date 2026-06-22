@@ -69,10 +69,6 @@ h1{text-align:center}
 <div class="card">
 <label>상대 속성 1</label>
 <div class="custom-select" id="sel1"></div>
-<label>상대 속성 2</label>
-<div class="custom-select" id="sel2"></div>
-<label>상대 속성 3</label>
-<div class="custom-select" id="sel3"></div>
 
   
   <!-- 초기화 버튼 -->
@@ -129,7 +125,9 @@ const chart={/* chart 내용 그대로 */
 };
 
 const types=Object.keys(icons);
-const sels=[document.getElementById('sel1'),document.getElementById('sel2'),document.getElementById('sel3')];
+const sels=[
+  document.getElementById('sel1')
+];
 
 function cls(v){
   if(v>=2)return'high';
